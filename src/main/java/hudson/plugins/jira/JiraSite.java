@@ -118,7 +118,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
      */
     public final boolean updateJiraIssueForAllStatus;
 
-
     /**
      * List of project keys (i.e., "MNG" portion of "MNG-512"),
      * last time we checked. Copy on write semantics.
@@ -138,7 +137,7 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
 
     @DataBoundConstructor
     public JiraSite(URL url, URL alternativeUrl, String userName, String password, boolean supportsWikiStyleComment, boolean recordScmChanges, String userPattern,
-                    boolean updateJiraIssueForAllStatus, String groupVisibility, String roleVisibility, boolean useHTTPAuth) {
+                    boolean updateJiraIssueForAllStatus, String groupVisibility, String roleVisibility, boolean useHTTPAuth, String customFieldId, String customFieldValue) {
         if (!url.toExternalForm().endsWith("/"))
             try {
                 url = new URL(url.toExternalForm() + "/");
@@ -746,7 +745,7 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
 
 
             JiraSite site = new JiraSite(new URL(url), altUrl, userName, password, false,
-                    false, null, false, groupVisibility, roleVisibility, useHTTPAuth);
+                    false, null, false, groupVisibility, roleVisibility, useHTTPAuth, null, null);
             try {
                 site.createSession();
                 return FormValidation.ok("Success");

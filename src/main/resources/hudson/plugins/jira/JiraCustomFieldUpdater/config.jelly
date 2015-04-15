@@ -1,0 +1,8 @@
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:entry title="${%Custom Field ID}" field="customFieldId">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Custom Field Value}" field="customFieldValue">
+    <f:textbox />
+  </f:entry>
+</j:jelly>
