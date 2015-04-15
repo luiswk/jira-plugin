@@ -26,7 +26,7 @@ public class MavenJiraIssueUpdater extends MavenReporter {
 
     @Override
     public boolean end(MavenBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return Updater.perform(build, listener);
+        return Updater.perform(build, listener, new Updater.DefaultUpdaterIssuesSelector());
     }
 
     @Override

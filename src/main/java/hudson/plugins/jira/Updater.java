@@ -1,14 +1,17 @@
 package hudson.plugins.jira;
 
+import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractBuild.DependencyChange;
 import hudson.model.BuildListener;
+import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Result;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.plugins.jira.listissuesparameter.JiraIssueParameterValue;
 import hudson.plugins.jira.soap.RemotePermissionException;
 import hudson.scm.ChangeLogSet.AffectedFile;
@@ -26,10 +29,12 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.xml.rpc.ServiceException;
 import org.apache.commons.lang.StringUtils;
 
 import static java.lang.String.format;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Actual JIRA update logic.
@@ -37,7 +42,7 @@ import static java.lang.String.format;
  * @author Kohsuke Kawaguchi
  */
 class Updater {
-    static boolean perform(AbstractBuild<?, ?> build, BuildListener listener) {
+    static boolean perform(AbstractBuild<?, ?> build, BuildListener listener, UpdaterIssuesSelector selector) {
         PrintStream logger = listener.getLogger();
         List<JiraIssue> issues = null;
 
@@ -56,7 +61,7 @@ class Updater {
                 return true;
             }
 
-            Set<String> ids = findIssueIdsRecursive(build, site.getIssuePattern(), listener);
+            Set<String> ids = selector.findIssueIds(build, site, listener);
 
             if (ids.isEmpty()) {
                 if (debug)
@@ -278,7 +283,7 @@ class Updater {
      * in JIRA can be detected.
      */
     private static Set<String> findIssueIdsRecursive(AbstractBuild<?, ?> build, Pattern pattern,
-                                                     BuildListener listener) {
+                                                     TaskListener listener) {
         Set<String> ids = new HashSet<String>();
 
         // first, issues that were carried forward.
@@ -306,7 +311,7 @@ class Updater {
      * @param pattern pattern to use to match issue ids
      */
     static void findIssues(AbstractBuild<?, ?> build, Set<String> ids, Pattern pattern,
-                           BuildListener listener) {
+                           TaskListener listener) {
         for (Entry change : build.getChangeSet()) {
             LOGGER.fine("Looking for JIRA ID in " + change.getMsg());
             Matcher m = pattern.matcher(change.getMsg());
@@ -341,4 +346,24 @@ class Updater {
      * Debug flag.
      */
     public static boolean debug = false;
+
+    public static final class DefaultUpdaterIssuesSelector extends UpdaterIssuesSelector {
+
+        @DataBoundConstructor
+        public DefaultUpdaterIssuesSelector() {
+        }
+
+        @Override
+        public Set<String> findIssueIds(@Nonnull final Run<?, ?> run, @Nonnull final JiraSite site, @Nonnull final TaskListener listener) {
+            return Updater.findIssueIdsRecursive((AbstractBuild<?, ?>) run, site.getIssuePattern(), listener);
+        }
+
+        @Extension
+        public static final class DescriptorImpl extends Descriptor<UpdaterIssuesSelector> {
+            @Override
+            public String getDisplayName() {
+                return Messages.Updater_DefaultIssuesSelector();
+            }
+        }
+    }
 }
