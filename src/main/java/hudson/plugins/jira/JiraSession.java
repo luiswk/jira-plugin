@@ -450,4 +450,9 @@ public class JiraSession {
         newVersion.setName(version);
         return service.addVersion(token, projectKey, newVersion);
     }
+
+    public void updateCustomField(String issueKey, String fieldId, String fieldValue) throws RemoteException {
+        RemoteFieldValue rf = new RemoteFieldValue(fieldId, new String[]{ fieldValue });
+        service.updateIssue(token, issueKey, new RemoteFieldValue[]{rf});
+    }
 }

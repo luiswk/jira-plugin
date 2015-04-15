@@ -137,7 +137,7 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
 
     @DataBoundConstructor
     public JiraSite(URL url, URL alternativeUrl, String userName, String password, boolean supportsWikiStyleComment, boolean recordScmChanges, String userPattern,
-                    boolean updateJiraIssueForAllStatus, String groupVisibility, String roleVisibility, boolean useHTTPAuth, String customFieldId, String customFieldValue) {
+                    boolean updateJiraIssueForAllStatus, String groupVisibility, String roleVisibility, boolean useHTTPAuth) {
         if (!url.toExternalForm().endsWith("/"))
             try {
                 url = new URL(url.toExternalForm() + "/");
@@ -745,7 +745,7 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
 
 
             JiraSite site = new JiraSite(new URL(url), altUrl, userName, password, false,
-                    false, null, false, groupVisibility, roleVisibility, useHTTPAuth, null, null);
+                    false, null, false, groupVisibility, roleVisibility, useHTTPAuth);
             try {
                 site.createSession();
                 return FormValidation.ok("Success");
