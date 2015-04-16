@@ -8,17 +8,8 @@
   <f:entry title="${%Use HTTP authentication instead of normal login}" field="useHTTPAuth">
     <f:checkbox />
   </f:entry>
-  <f:entry title="${%Supports Wiki notation}" field="supportsWikiStyleComment">
-    <f:checkbox />
-  </f:entry>
-  <f:entry title="${%Record Scm changes}" field="recordScmChanges">
-    <f:checkbox/>
-  </f:entry>
   <f:entry title="${%Issue Pattern}" field="userPattern">
     <f:textbox />
-  </f:entry>
-  <f:entry title="${%Update Jira Issues For All Build Results}" field="updateJiraIssueForAllStatus">
-    <f:checkbox />
   </f:entry>
   <f:entry title="${%User Name}" field="userName">
     <f:textbox />

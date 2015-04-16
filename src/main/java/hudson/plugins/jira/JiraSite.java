@@ -91,18 +91,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
     public final String roleVisibility;
 
     /**
-     * True if this JIRA is configured to allow Confluence-style Wiki comment.
-     */
-    public final boolean supportsWikiStyleComment;
-
-    /**
-     * to record scm changes in jira issue
-     *
-     * @since 1.21
-     */
-    public final boolean recordScmChanges;
-
-    /**
      * user defined pattern
      *
      * @since 1.22
@@ -110,13 +98,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
     private final String userPattern;
 
     private transient Pattern userPat;
-
-    /**
-     * updated jira issue for all status
-     *
-     * @since 1.22
-     */
-    public final boolean updateJiraIssueForAllStatus;
 
     /**
      * List of project keys (i.e., "MNG" portion of "MNG-512"),
@@ -136,8 +117,8 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
     private transient ThreadLocal<WeakReference<JiraSession>> jiraSession = new ThreadLocal<WeakReference<JiraSession>>();
 
     @DataBoundConstructor
-    public JiraSite(URL url, URL alternativeUrl, String userName, String password, boolean supportsWikiStyleComment, boolean recordScmChanges, String userPattern,
-                    boolean updateJiraIssueForAllStatus, String groupVisibility, String roleVisibility, boolean useHTTPAuth) {
+    public JiraSite(URL url, URL alternativeUrl, String userName, String password, String userPattern,
+                    String groupVisibility, String roleVisibility, boolean useHTTPAuth) {
         if (!url.toExternalForm().endsWith("/"))
             try {
                 url = new URL(url.toExternalForm() + "/");
@@ -156,8 +137,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
         this.alternativeUrl = alternativeUrl;
         this.userName = Util.fixEmpty(userName);
         this.password = Util.fixEmpty(password);
-        this.supportsWikiStyleComment = supportsWikiStyleComment;
-        this.recordScmChanges = recordScmChanges;
         this.userPattern = Util.fixEmpty(userPattern);
         if (this.userPattern != null) {
             this.userPat = Pattern.compile(this.userPattern);
@@ -165,7 +144,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
             this.userPat = null;
         }
 
-        this.updateJiraIssueForAllStatus = updateJiraIssueForAllStatus;
         this.groupVisibility = Util.fixEmpty(groupVisibility);
         this.roleVisibility = Util.fixEmpty(roleVisibility);
         this.useHTTPAuth = useHTTPAuth;
@@ -744,8 +722,8 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
             }
 
 
-            JiraSite site = new JiraSite(new URL(url), altUrl, userName, password, false,
-                    false, null, false, groupVisibility, roleVisibility, useHTTPAuth);
+            JiraSite site = new JiraSite(new URL(url), altUrl, userName, password,
+                    null, groupVisibility, roleVisibility, useHTTPAuth);
             try {
                 site.createSession();
                 return FormValidation.ok("Success");

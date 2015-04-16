@@ -11,6 +11,7 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -31,13 +32,15 @@ public class JiraCustomFieldUpdater extends Notifier {
 
     private static final String BUILD_PARAMETER_PREFIX = "$";
 
-    public final String customFieldId;
-    public final String customFieldValue;
+    private final String buildResult;
+    private final String customFieldId;
+    private final String customFieldValue;
 
     public String realFieldValue;
 
     @DataBoundConstructor
-    public JiraCustomFieldUpdater(String customFieldId, String customFieldValue) {
+    public JiraCustomFieldUpdater(String buildResult, String customFieldId, String customFieldValue) {
+        this.buildResult = buildResult;
         this.customFieldId = customFieldId;
         this.customFieldValue = customFieldValue;
     }
@@ -46,10 +49,10 @@ public class JiraCustomFieldUpdater extends Notifier {
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         PrintStream logger = listener.getLogger();
         try {
-            JiraSession session = getJiraSession(build);
+            JiraSession session = getJiraSession(getJiraSite(build));
 
             JiraBuildAction buildAction = build.getAction(JiraBuildAction.class);
-            if (buildAction != null && build.getResult().isBetterOrEqualTo(Result.UNSTABLE)) {
+            if (buildAction != null && build.getResult().isBetterOrEqualTo(Result.fromString(buildResult))) {
                 Map<String, String> vars = new HashMap<String, String>();
                 vars.putAll(build.getEnvironment(listener));
                 vars.putAll(build.getBuildVariables());
@@ -95,16 +98,20 @@ public class JiraCustomFieldUpdater extends Notifier {
         }
     }
 
-    private JiraSession getJiraSession(AbstractBuild<?, ?> build) throws ServiceException, IOException {
-        JiraSite site = JiraSite.get(build.getProject());
-        if (site == null) {
-            throw new IllegalStateException("JIRA site needs to be configured in the project " + build.getFullDisplayName());
-        }
-        JiraSession session = site.createSession();
+    private JiraSession getJiraSession(JiraSite site) throws ServiceException, IOException {
+        JiraSession session = site.getSession();
         if (session == null) {
             throw new IllegalStateException("Remote SOAP access for JIRA isn't configured in Jenkins");
         }
         return session;
+    }
+
+    private JiraSite getJiraSite(AbstractBuild<?, ?> build) {
+        JiraSite site = JiraSite.get(build.getProject());
+        if (site == null) {
+            throw new IllegalStateException("JIRA site needs to be configured in the project " + build.getFullDisplayName());
+        }
+        return site;
     }
 
     public BuildStepMonitor getRequiredMonitorService() {

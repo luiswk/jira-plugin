@@ -22,6 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
+    <f:entry title="${%Supports Wiki notation}" field="supportsWikiStyleComment">
+        <f:checkbox />
+    </f:entry>
+    <f:entry title="${%Record Scm changes}" field="recordScmChanges">
+        <f:checkbox />
+    </f:entry>
+    <f:entry title="${%Update Jira Issues For All Build Results}" field="updateJiraIssueForAllStatus">
+        <f:checkbox />
+    </f:entry>
     <j:if test="${descriptor.hasIssueSelectors()}">
         <f:dropdownDescriptorSelector field="issueSelector" title="${%Issue selector}"/>
     </j:if>
