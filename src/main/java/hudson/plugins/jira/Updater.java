@@ -12,10 +12,7 @@ import javax.annotation.Nonnull;
 import javax.xml.rpc.ServiceException;
 import java.io.PrintStream;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +23,8 @@ import java.util.regex.Pattern;
  * @author Kohsuke Kawaguchi
  */
 class Updater {
-    static boolean perform(AbstractBuild<?, ?> build, BuildListener listener, UpdaterIssuesSelector selector) {
+
+    static boolean perform(AbstractBuild<?, ?> build, BuildListener listener, UpdaterIssuesSelector selector, Result resultThreshold) {
         PrintStream logger = listener.getLogger();
 
         JiraSite site = JiraSite.get(build.getProject());
@@ -37,7 +35,7 @@ class Updater {
         }
 
         try {
-            Set<String> ids = selector.findIssueIds(build, site, listener);
+            Set<String> ids = selector.findIssueIds(build, site, listener, resultThreshold);
             if (ids.isEmpty()) {
                 if (debug)
                     logger.println("No JIRA issues found.");
@@ -62,6 +60,7 @@ class Updater {
         } catch (Exception e) {
             logger.println("Error looking for JIRA issues.\n" + e);
             build.setResult(Result.FAILURE);
+            build.getActions().add(new JiraBuildAction(build, Collections.<JiraIssue> emptyList()));
         }
         return true;
     }
@@ -90,18 +89,10 @@ class Updater {
      * {@link JiraSite#existsIssue(String)} here so that new projects
      * in JIRA can be detected.
      */
-    private static Set<String> findIssueIdsRecursive(AbstractBuild<?, ?> build, Pattern pattern,
-                                                     TaskListener listener) {
+    private static Set<String> findIssueIdsRecursive(AbstractBuild<?, ?> build, Pattern pattern, TaskListener listener, Result resultThreshold) {
         Set<String> ids = new HashSet<String>();
-
         // first, issues that were carried forward.
-        Run<?, ?> prev = build.getPreviousBuild();
-        if (prev != null) {
-            JiraCarryOverAction a = prev.getAction(JiraCarryOverAction.class);
-            if (a != null) {
-                ids.addAll(a.getIDs());
-            }
-        }
+        collectIssuesFromPastBuild(build, resultThreshold, ids);
 
         // then issues in this build
         findIssues(build, ids, pattern, listener);
@@ -113,6 +104,19 @@ class Updater {
             }
         }
         return ids;
+    }
+
+    private static void collectIssuesFromPastBuild(AbstractBuild<?, ?> build, Result resultThreshold, Set<String> ids) {
+        AbstractBuild<?, ?> prev = build.getPreviousBuild();
+        if (prev != null && prev.getResult().isWorseThan(resultThreshold)) {
+            JiraBuildAction a = prev.getAction(JiraBuildAction.class);
+            if (a != null && a.issues != null && a.issues.length > 0) {
+                for (JiraIssue issue : a.issues) {
+                    ids.add(issue.id);
+                }
+            }
+            collectIssuesFromPastBuild(prev, resultThreshold, ids);
+        }
     }
 
     /**
@@ -162,8 +166,8 @@ class Updater {
         }
 
         @Override
-        public Set<String> findIssueIds(@Nonnull final Run<?, ?> run, @Nonnull final JiraSite site, @Nonnull final TaskListener listener) {
-            return Updater.findIssueIdsRecursive((AbstractBuild<?, ?>) run, site.getIssuePattern(), listener);
+        public Set<String> findIssueIds(@Nonnull final Run<?, ?> run, @Nonnull final JiraSite site, @Nonnull final TaskListener listener, @Nonnull final Result resultThreshold) {
+            return Updater.findIssueIdsRecursive((AbstractBuild<?, ?>) run, site.getIssuePattern(), listener, resultThreshold);
         }
 
         @Extension

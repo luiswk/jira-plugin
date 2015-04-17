@@ -88,17 +88,19 @@ public class JiraIssueUpdater extends Recorder implements MatrixAggregatable {
 
         try {
             boolean doUpdate;
+            Result buildResult;
             if (updateJiraIssueForAllStatus) {
                 doUpdate = true;
+                buildResult = Result.FAILURE;
             } else {
                 doUpdate = build.getResult().isBetterOrEqualTo(Result.UNSTABLE);
+                buildResult = Result.UNSTABLE;
             }
 
             if (doUpdate) {
-                Updater.perform(build, listener, getIssueSelector());
                 JiraSite site = getJiraSite(build);
                 JiraSession session = getJiraSession(site);
-                JiraBuildAction buildAction = build.getAction(JiraBuildAction.class);
+                JiraBuildAction buildAction = getJiraBuildAction(build, listener, buildResult);
                 if (buildAction != null && buildAction.issues != null && buildAction.issues.length > 0) {
                     List<JiraIssue> issues = Arrays.asList(buildAction.issues);
                     submitComments(build, logger, rootUrl, session,
@@ -136,7 +138,7 @@ public class JiraIssueUpdater extends Recorder implements MatrixAggregatable {
             public boolean endBuild() throws InterruptedException, IOException {
                 PrintStream logger = listener.getLogger();
                 logger.println("End of Matrix Build. Updating JIRA.");
-                return Updater.perform(this.build, this.listener, getIssueSelector());
+                return Updater.perform(build, listener, getIssueSelector(), Result.UNSTABLE);
             }
         };
     }
@@ -155,6 +157,15 @@ public class JiraIssueUpdater extends Recorder implements MatrixAggregatable {
             throw new IllegalStateException("JIRA site needs to be configured in the project " + build.getFullDisplayName());
         }
         return site;
+    }
+
+    private JiraBuildAction getJiraBuildAction(AbstractBuild<?, ?> build, BuildListener listener, Result buildResult) {
+        JiraBuildAction buildAction = build.getAction(JiraBuildAction.class);
+        if (buildAction == null) {
+            Updater.perform(build, listener, new Updater.DefaultUpdaterIssuesSelector(), buildResult);
+            buildAction = build.getAction(JiraBuildAction.class);
+        }
+        return buildAction;
     }
 
     /**

@@ -35,6 +35,7 @@ public class JiraCustomFieldUpdater extends Notifier {
     private final String buildResult;
     private final String customFieldId;
     private final String customFieldValue;
+    private final Result realBuildResult;
 
     public String realFieldValue;
 
@@ -43,6 +44,7 @@ public class JiraCustomFieldUpdater extends Notifier {
         this.buildResult = buildResult;
         this.customFieldId = customFieldId;
         this.customFieldValue = customFieldValue;
+        this.realBuildResult = Result.fromString(buildResult);
     }
 
     @Override
@@ -50,22 +52,32 @@ public class JiraCustomFieldUpdater extends Notifier {
         PrintStream logger = listener.getLogger();
         try {
             JiraSession session = getJiraSession(getJiraSite(build));
+            if (build.getResult().isBetterOrEqualTo(realBuildResult)) {
+                JiraBuildAction buildAction = getJiraBuildAction(build, listener);
+                if (buildAction != null && buildAction.issues != null && buildAction.issues.length > 0) {
+                    Map<String, String> vars = new HashMap<String, String>();
+                    vars.putAll(build.getEnvironment(listener));
+                    vars.putAll(build.getBuildVariables());
+                    substituteEnvVars(vars);
 
-            JiraBuildAction buildAction = build.getAction(JiraBuildAction.class);
-            if (buildAction != null && build.getResult().isBetterOrEqualTo(Result.fromString(buildResult))) {
-                Map<String, String> vars = new HashMap<String, String>();
-                vars.putAll(build.getEnvironment(listener));
-                vars.putAll(build.getBuildVariables());
-                substituteEnvVars(vars);
-
-                List<JiraIssue> issues = Arrays.asList(buildAction.issues);
-                submitCustomField(logger, issues, session);
+                    List<JiraIssue> issues = Arrays.asList(buildAction.issues);
+                    submitCustomField(logger, issues, session);
+                }
             }
         } catch (ServiceException e) {
             logger.println("Couldn't obtain JIRA session.\n" + e);
             e.printStackTrace();
         }
         return true;
+    }
+
+    private JiraBuildAction getJiraBuildAction(AbstractBuild<?, ?> build, BuildListener listener) {
+        JiraBuildAction buildAction = build.getAction(JiraBuildAction.class);
+        if (buildAction == null) {
+            Updater.perform(build, listener, new Updater.DefaultUpdaterIssuesSelector(), realBuildResult);
+            buildAction = build.getAction(JiraBuildAction.class);
+        }
+        return buildAction;
     }
 
     private void substituteEnvVars(Map<String, String> vars) {
@@ -139,6 +151,14 @@ public class JiraCustomFieldUpdater extends Notifier {
             return FormValidation.ok();
         }
 
+        public ListBoxModel doFillBuildResultItems() {
+            ListBoxModel items = new ListBoxModel();
+            items.add("Always", Result.FAILURE.toString());
+            items.add("Build at least unstable", Result.UNSTABLE.toString());
+            items.add("Build successful", Result.SUCCESS.toString());
+            return items;
+        }
+
         @Override
         public JiraCustomFieldUpdater newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             return req.bindJSON(JiraCustomFieldUpdater.class, formData);
@@ -166,5 +186,9 @@ public class JiraCustomFieldUpdater extends Notifier {
 
     public String getRealFieldValue() {
         return realFieldValue;
+    }
+
+    public String getBuildResult() {
+        return buildResult;
     }
 }

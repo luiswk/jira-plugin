@@ -29,6 +29,7 @@ import javax.annotation.Nonnull;
 
 import hudson.ExtensionPoint;
 import hudson.model.AbstractDescribableImpl;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
@@ -48,8 +49,9 @@ public abstract class UpdaterIssuesSelector extends AbstractDescribableImpl<Upda
      * @param run The completed run.
      * @param site Jira site configured for current job.
      * @param listener Current's run listener.
+     * @param resultThreshold Build's result
      * @return Set of ids of issues which should be updated.
      */
-    public abstract Set<String> findIssueIds(@Nonnull Run<?, ?> run, @Nonnull JiraSite site, @Nonnull TaskListener listener);
+    public abstract Set<String> findIssueIds(@Nonnull Run<?, ?> run, @Nonnull JiraSite site, @Nonnull TaskListener listener, @Nonnull Result resultThreshold);
 
 }
