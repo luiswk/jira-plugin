@@ -5,6 +5,7 @@ import hudson.maven.MavenBuild;
 import hudson.maven.MavenReporter;
 import hudson.maven.MavenReporterDescriptor;
 import hudson.model.BuildListener;
+import hudson.model.Result;
 import hudson.tasks.BuildStepDescriptor;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerRequest;
@@ -26,7 +27,7 @@ public class MavenJiraIssueUpdater extends MavenReporter {
 
     @Override
     public boolean end(MavenBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return Updater.perform(build, listener);
+        return Updater.perform(build, listener, new Updater.DefaultUpdaterIssuesSelector(), Result.UNSTABLE);
     }
 
     @Override
